@@ -1,0 +1,82 @@
+@charset "utf-8";
+
+/*重写*/
+
+.layui-layout-admin {
+    .layui-logo {
+        color: #fff;
+        font-size: 20px;
+    }
+    .layui-body {
+        bottom: 0;
+    }
+}
+
+.layui-form-item-search {
+    >input[type=text] {
+        float: left;
+        width: auto;
+        margin: 10px 1px 0 10px;
+    }
+    >button {
+        margin-top: 10px;
+    }
+}
+
+.layui-table,
+.layui-table-view {
+    margin: 0;
+}
+
+
+/*自定义layui-css*/
+
+.layui-panel {
+    border: 1px solid #e6e6e6;
+    border-radius: 2px;
+    color: #333;
+    .layui-title {
+        padding: 10px;
+        background: #f2f2f2;
+        border-bottom: 1px solid #e6e6e6;
+    }
+    .layui-content {
+        height: auto;
+        overflow: auto;
+    }
+}
+
+.layui-form-item-toolbar {
+    text-align: right;
+    >label {
+        margin-right: 10px;
+        >span {
+            color: #0b9ff5;
+        }
+    }
+}
+
+.layui-title {
+    padding: 10px;
+    background: #f2f2f2;
+    color: #21b4cb;
+    border-left: 3px solid #21b4cb;
+}
+
+.layui-input-chose {
+    width: 300px;
+    float: left;
+    margin-right: 1px;
+}
+
+
+/* 补充 patch */
+
+.layui-form-patch {
+    .layui-form-item {
+        margin-bottom: 5px;
+    }
+    .layui-form-label {
+        width: 120px;
+    }
+}

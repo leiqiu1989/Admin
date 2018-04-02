@@ -1,0 +1,1 @@
+define("common/api",[],function(i,e,r){"use strict";var o="//openapi.dev-ag.56qq.com",a={getInfo:o+"/abc/org/info/get",upload:o+"/abc/org/register/pic/upload",register:o+"/abc/org/register",billList:o+"/abc/bill/list",publish:o+"/abc/cargo/publish"};return a});

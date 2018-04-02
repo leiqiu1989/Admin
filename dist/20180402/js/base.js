@@ -1,0 +1,1 @@
+define("base",[],function(){var o="./js";seajs.config({base:o,charset:"utf-8",alias:{ajaxform:"plugin/jquery.form.js",underscore:"plugin/underscore-min.js",api:"common/api.js",app:"app.js",router:"common/router.js",common:"common/common.js",map:"common/map.js"}})}),seajs.use("base");

@@ -1,0 +1,99 @@
+@charset "utf-8";
+.clearfix:after {
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+input::-webkit-input-placeholder,
+input:-moz-placeholder {
+    color: red;
+    font-size: 14px;
+}
+
+::-webkit-input-placeholde {
+    color: red;
+}
+
+::-webkit-scrollbar-button:vertical {
+    display: none;
+}
+
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-track {
+    background-color: #e2e2e2;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 0;
+    background-color: rgba(0, 0, 0, .3);
+}
+
+::-webkit-scrollbar-thumb:vertical:hover {
+    background-color: rgba(0, 0, 0, .35);
+}
+
+::-webkit-scrollbar-thumb:vertical:active {
+    background-color: rgba(0, 0, 0, .38);
+}
+
+a,
+a:hover,
+a:link,
+a:visited {
+    text-decoration: none;
+}
+
+ul {
+    list-style: none;
+}
+
+table {
+    width: 100%;
+}
+
+.pull-left {
+    float: left;
+}
+
+.pull-right {
+    float: right;
+}
+
+.no-margin {
+    margin: 0 !important;
+}
+
+.no-padding {
+    padding: 0 !important;
+}
+
+.p20 {
+    padding: 20px;
+}
+
+.mb10 {
+    margin-bottom: 10px;
+}
+
+.red {
+    color: red !important;
+}
+
+.w-300 {
+    width: 300px;
+}
+
+
+/*网站右侧内容区域*/
+
+#content {
+    padding: 10px;
+}
