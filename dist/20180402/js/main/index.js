@@ -1,1 +1,0 @@
-define("main/index",["map"],function(n,i,t){"use strict";var e=n("map"),o=function(){};$.extend(o.prototype,{init:function(){e.init("content")}});var c=new o;i.init=function(){c.init()}});

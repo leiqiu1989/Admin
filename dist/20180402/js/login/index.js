@@ -1,1 +1,0 @@
-define("login/index",["../../tpl/login/index"],function(n,i,t){"use strict";var e={index:n("../../tpl/login/index")},o=function(){};$.extend(o.prototype,{init:function(){$("#app").empty().html(template.compile(e.index)())}});var p=new o;i.init=function(){p.init()}});
