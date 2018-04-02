@@ -1,5 +1,5 @@
 define("base", [], function() {
-    var basicUrl = '../js';
+    var basicUrl = './js';
 
     seajs.config({
         base: basicUrl,
