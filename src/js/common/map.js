@@ -36,12 +36,15 @@ define(function(require, exports, module) {
             this.points = [];
             this.selectedMonitorCar = null;
         },
-        init: function(el, defaultPoint, callback) {
+        init: function(el, opt, callback) {
             var me = this;
+            opt = opt || {
+                addNavigation: true
+            };
             this.reset();
             this._map = new BMap.Map(el);
-            if (defaultPoint) {
-                this.setCenterAndZoom([defaultPoint]);
+            if (opt.defaultPoint) {
+                this.setCenterAndZoom([opt.defaultPoint]);
             } else {
                 var localCity = new BMap.LocalCity();
                 //根据IP定位地图
@@ -57,7 +60,9 @@ define(function(require, exports, module) {
             //启用滚轮缩放
             this._map.enableScrollWheelZoom();
             // 添加地图平移控件
-            this._map.addControl(new BMap.NavigationControl());
+            if (opt.addNavigation) {
+                this._map.addControl(new BMap.NavigationControl());
+            }
             if (callback) callback(this._map);
         },
         // 添加鼠标绘制类

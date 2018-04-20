@@ -28,6 +28,10 @@
     margin: 0;
 }
 
+.layui-breadcrumb {
+    visibility: visible;
+}
+
 
 /*自定义layui-css*/
 
@@ -56,15 +60,30 @@
     }
 }
 
-.layui-title {
+.layui-single-title {
     padding: 10px;
     background: #f2f2f2;
-    color: #21b4cb;
     border-left: 3px solid #21b4cb;
 }
 
+.layui-input-dialog-chose {
+    width: 82%;
+    float: left;
+    margin-right: 1px;
+}
+
 .layui-input-chose {
-    width: 300px;
+    @extend .layui-input-dialog-chose;
+    width: 90%;
+}
+
+.layui-footer-btns {
+    text-align: center;
+    margin-left: 10px;
+}
+
+.layui-input-searchTree {
+    width: 83%;
     float: left;
     margin-right: 1px;
 }
@@ -75,8 +94,15 @@
 .layui-form-patch {
     .layui-form-item {
         margin-bottom: 5px;
+        .layui-form-label {
+            width: 90px;
+        }
+        .layui-input-block {
+            margin-left: 120px;
+        }
     }
-    .layui-form-label {
-        width: 120px;
-    }
+}
+
+.layui-tab-patch {
+    margin: 10px;
 }

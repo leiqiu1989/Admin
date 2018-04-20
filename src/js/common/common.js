@@ -2,6 +2,7 @@ define(function(require, exports, module) {
     'use strict';
 
     var api = require('api');
+    var map = require('map');
     require('underscore');
 
     /*js对象扩展*/
@@ -43,12 +44,96 @@ define(function(require, exports, module) {
                 layer.open($.extend(opt, { offset: '60px' }));
             });
         },
+        // message
+        layMsg: function(content) {
+            layui.use('layer', function() {
+                var layer = layui.layer;
+                layer.msg(content, {
+                    offset: 't'
+                });
+            });
+        },
+        layAlert: function(content, opt) {
+            opt = opt || {};
+            var options = $.extend({ icon: 2 }, opt);
+            layer.alert(content, options);
+            return false;
+        },
+        // 确认框
+        layConfirm: function(content, callback) {
+            layer.confirm(content, {
+                btn: ['确定', '取消'] //按钮
+            }, function() {
+                callback && callback();
+                layer.closeAll();
+            }, function() {
+                layer.closeAll();
+            });
+        },
         // 初始化form
-        renderForm: function() {
+        renderForm: function(callback) {
             layui.use('form', function() {
                 var form = layui.form;
+                // 自定义验证
+                form.verify({
+                    int: [
+                        /^\+?[1-9][0-9]*$/, '只能输入大于0的正整数'
+                    ]
+                });
                 form.render();
+                if (callback) {
+                    callback(form);
+                }
             });
+        },
+        // 获取表格选择的行
+        getSelectedRow: function(table, tableId) {
+            var checkStatus = table.checkStatus(tableId);
+            var len = checkStatus.data.length;
+            if (len !== 1) {
+                this.layAlert('请选择一条数据进行操作!');
+                return {
+                    success: false
+                };
+            }
+            var data = checkStatus.data[0];
+            return {
+                success: true,
+                data: data
+            };
+        },
+        // 经纬度分割
+        transLngLat: function(lnglat) {
+            if (lnglat) {
+                var _lnglat = lnglat.split(',');
+                return { Lng: parseFloat(_lnglat[0]), Lat: parseFloat(_lnglat[1]) };
+            }
+            return {};
+        },
+        // 设置radio和checkbox选中
+        setRadioCheckValue: function(container, filters) {
+            filters = filters || [];
+            _.each(filters, function(filter, i) {
+                $(container).find(filters[i]).attr('checked', true);
+            });
+        },
+        // 初始化下拉框
+        initSelect: function(opt) {
+            opt = opt || {
+                el: '',
+                data: [],
+                textField: opt.textField || 'name',
+                valueField: opt.valueField || 'value',
+                selectValue: ''
+            };
+            var html = '';
+            $.each(opt.data, function(index, item) {
+                var _value = item[opt.valueField];
+                html += (opt.selectValue && opt.selectValue == _value) ?
+                    '<option value="' + item[opt.valueField] + '" selected>' + item[opt.textField] + '</option>' :
+                    '<option value="' + item[opt.valueField] + '">' + item[opt.textField] + '</option>'
+            });
+            $(opt.el).empty().html(html);
         },
         // 初始化日期
         initDateTime: function(opt) {
@@ -58,8 +143,199 @@ define(function(require, exports, module) {
             });
         },
         // 渲染右侧区域
-        renderContent: function(tpl) {
-            $('#content').removeAttr('style').empty().html(template.compile(tpl)());
+        renderContent: function(tpl, data) {
+            data = data || {};
+            $('#content').removeAttr('style').empty().html(template.compile(tpl)(data));
+        },
+        // 树查询
+        searchTree: function(treeId, txt) {
+            var outNodeList = null;
+            var nodeList = null;
+
+            var zTree = $.fn.zTree.getZTreeObj(treeId);
+            if (txt) {
+                nodeList = zTree.getNodes();
+                nodeList = zTree.transformToArray(nodeList);
+                zTree.hideNodes(nodeList); //先隐藏所有节点
+                nodeList = zTree.getNodesByParamFuzzy("ADNM", txt);
+                outNodeList = zTree.getNodesByParamFuzzy("ADNM", txt);
+                for (var i = 0; i < nodeList.length; i++) {
+                    findParent(zTree, nodeList[i]); //递归获取父节点
+                    findChild(zTree, nodeList[i]); //递归获取子节点
+                }
+            } else {
+                outNodeList = zTree.transformToArray(zTree.getNodes());
+            }
+            zTree.showNodes(outNodeList); //再展示匹配到的节点
+
+            function findParent(zTree, node) {
+                var pNode = node.getParentNode();
+                if (pNode) {
+                    outNodeList.push(pNode);
+                    findParent(zTree, pNode);
+                }
+            }
+
+            function findChild(zTree, node) {
+                var pNodes = node.children;
+                if (pNodes) {
+                    for (var i = 0; i < pNodes.length; i++) {
+                        outNodeList.push(pNodes[i]);
+                        findChild(zTree, pNodes[i]);
+                    }
+                }
+            }
+        },
+        // 初始化区域
+        initTree: function(opt) {
+            var me = this;
+            opt = opt || {
+                url: null,
+                param: {},
+                treeId: null,
+                idKey: null,
+                pIdKey: null,
+                dataFilter: $.noop,
+                callback: $.noop,
+                hasSearchClick: false,
+                expandFlag: false,
+                checkEnable: false
+            };
+            var setting = {
+                view: {
+                    selectedMulti: false
+                },
+                check: {
+                    enable: opt.checkEnable
+                },
+                data: {
+                    simpleData: {
+                        enable: true,
+                        idKey: opt.idKey,
+                        pIdKey: opt.pIdKey,
+                        rootPId: null
+                    },
+                    key: {
+                        name: opt.name
+                    }
+                },
+                callback: {
+                    onClick: opt.callback
+                }
+            };
+            me.ajax(opt.url, opt.param, function(res) {
+                if (res.IsSuccess) {
+                    var data = res.Data || [];
+                    if (opt.dataFilter) {
+                        data = opt.dataFilter(data);
+                    }
+                    $.fn.zTree.init($('#' + opt.treeId), setting, data);
+                    var zTree = $.fn.zTree.getZTreeObj(opt.treeId);
+                    zTree.expandAll(opt.expandFlag);
+                    if (opt.hasSearchClick) {
+                        // 绑定事件
+                        $('#btnSearchTree').on('click', function() {
+                            var txt = $.trim($(':text[name="treeText"]').val());
+                            me.searchTree(opt.treeId, txt);
+                        });
+                    }
+                }
+            });
+        },
+        // 区域和地图弹出框选择
+        areaMapDialog: function(containerEl, mapCallBack, treeCallBack) {
+            var me = this;
+
+            $(containerEl).off()
+                // 选择区域
+                .on('click', '#choseArea', function() {
+                    var areaCode = null,
+                        areaName = null;
+                    var tpl = require('../../tpl/common/areaIndex');
+                    me.layUIDialog({
+                        title: '区域选择',
+                        type: 1,
+                        content: tpl,
+                        area: ['300px', '500px'],
+                        success: function(layerEl) {
+                            me.initTree({
+                                url: api.getAreaList,
+                                param: {},
+                                treeId: 'commonTree',
+                                idKey: 'ADCD',
+                                pIdKey: 'ParentCode',
+                                name: 'ADNM',
+                                hasSearchClick: true,
+                                callback: function(e, treeId, treeNode) {
+                                    areaCode = treeNode.ADCD;
+                                    areaName = treeNode.ADNM;
+                                }
+                            });
+                        },
+                        btnAlign: 'r',
+                        btn: ['确 定', '关 闭'],
+                        yes: function(index) {
+                            treeCallBack && treeCallBack(areaCode, areaName);
+                            layer.close(index)
+                        },
+                        btn2: function(index) {
+                            layer.close(index)
+                        }
+                    });
+                    return false;
+                })
+                // 选择地图
+                .on('click', '#choseLngLat', function() {
+                    var _point = null;
+                    var tempData = $(this).prev(':text[name="lnglat"]').data('lnglat')
+                    var lng = tempData ? tempData.lng : null;
+                    var lat = tempData ? tempData.lat : null;
+                    me.layUIDialog({
+                        title: '添加标注点',
+                        type: 1,
+                        content: '<div id="dialogMap" class="full"></div>',
+                        area: ['500px', '450px'],
+                        success: function() {
+                            map.init('dialogMap', null, function() {
+                                if (lng && lat) {
+                                    var point = new BMap.Point(lng, lat);
+                                    var marker = new BMap.Marker(point);
+                                    marker.enableDragging();
+                                    map.getMap().addOverlay(marker);
+                                    _point = point;
+                                    dragEvent(marker);
+                                }
+                            });
+                        },
+                        btnAlign: 'r',
+                        btn: ['添加标注点', '关 闭'],
+                        yes: function() {
+                            var _map = map.getMap();
+                            map.clearOverlays();
+                            var mkrTool = new BMapLib.MarkerTool(_map, { autoClose: true, followText: "添加标注点" });
+                            mkrTool.open();
+                            mkrTool.addEventListener("markend", function(e) {
+                                _point = e.marker.point;
+                                e.marker.enableDragging();
+                                dragEvent(e.marker);
+                                mkrTool.close();
+                            });
+                        },
+                        btn2: function(index) {
+                            if (_point) {
+                                mapCallBack && mapCallBack(_point);
+                            }
+                            layer.close(index)
+                        }
+                    });
+                    return false;
+
+                    function dragEvent(marker) {
+                        marker.addEventListener('dragend', function(e) {
+                            _point = e.point;
+                        });
+                    }
+                });
         },
         // 自动转换为带时分秒的日期字符串
         transferDateTime: function(time) {
@@ -284,33 +560,37 @@ define(function(require, exports, module) {
             var me = this;
             param = param || {};
             opt = opt || {};
-            var sid = this.getCookie('abc-sid');
-            if (sid) {
-                opt = $.extend({
-                    headers: {
-                        'abc-sid': sid
-                    }
-                }, opt);
-            }
             this.loading();
             return $.ajax($.extend({
-                    type: "POST",
+                    type: opt.type || 'GET',
                     url: url,
                     data: param,
                     dataType: 'json',
                     cache: false,
                     success: function(res) {
+                        // 代表未登陆
+                        if (res && res.ErrorCode) {
+                            var msg = res.Message || '系统错误,请联系管理员';
+                            me.layAlert(msg, {
+                                yes: function(index) {
+                                    layer.close(index)
+                                    me.changeHash('#login/index');
+                                }
+                            });
+                        }
                         if (callback && typeof callback === 'function') {
                             callback.call(this, res);
                         }
                     },
-                    error: function(a, b, c) {
-                        debugger;
-                    }
+                    error: function(a, b, c) {}
                 }, opt))
                 .always(function() {
                     me.loading('hide');
                 });
+        },
+        $: function(el, container) {
+            container = container || '#content'
+            return $(container).find(el);
         }
     };
     return common;

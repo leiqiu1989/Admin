@@ -83,52 +83,152 @@ define(function(require, exports, module) {
             $.fn.zTree.init($("#tree"), setting, zNodes);
         },
         initTable: function() {
+            var me = this;
             layui.use(['table'], function() {
                 var table = layui.table;
                 table.render({
                     elem: '#userTbList',
-                    url: '/demo/table/user/',
+                    url: api.getUserList,
                     page: true,
                     cols: [
                         [ //表头
-                            { field: 'id', title: 'ID', width: 80, sort: true },
-                            { field: 'username', title: '用户名', width: 80 },
-                            { field: 'sex', title: '性别', width: 80, sort: true },
-                            { field: 'city', title: '城市', width: 80 },
-                            { field: 'sign', title: '签名', width: 170 },
-                            { field: 'experience', title: '积分', width: 80, sort: true },
-                            { field: 'score', title: '评分', width: 80, sort: true },
-                            { field: 'classify', title: '职业', width: 80 },
-                            { field: 'wealth', title: '财富', width: 135, sort: true }
-
+                            { title: '', field: 'Id', type: 'checkbox' },
+                            { title: '登录名', field: 'UserId', width: 100 },
+                            { title: '姓名', field: 'UserName', width: 120 },
+                            { title: '部门', field: 'DepartmentName' },
+                            {
+                                title: '是否启用',
+                                field: 'IsAble',
+                                width: 100,
+                                templet: function(d) {
+                                    return d.IsAble ? '是' : '否'
+                                }
+                            },
+                            {
+                                title: '是否改密',
+                                field: 'IfChangePwd',
+                                width: 100,
+                                templet: function(d) {
+                                    return d.IsAble ? '是' : '否'
+                                }
+                            },
+                            { title: '添加时间', field: 'AddDate', width: 160 },
+                            { title: '描述', field: 'Description' }
                         ]
                     ]
                 });
+                me.table = table;
+            });
+        },
+        editDialog(data) {
+            var me = this;
+            data = data || {};
+            var isAdd = _.isEmpty(data);
+            var _html = template.compile(tpls.add)($.extend(data, { isAdd: isAdd }));
+            var title = isAdd ? '新增用户信息' : '编辑用户信息';
+            common.layUIDialog({
+                title: title,
+                type: 1,
+                content: _html,
+                area: ['550px', '570px'],
+                success: function(layero, index) {
+                    // 设置radio和checkbox的值
+                    common.setRadioCheckValue(layero, [':radio[name="IsAble"][value="' + data.IsAble + '"]', ':radio[name="IfChangePwd"][value="' + data.IfChangePwd + '"]']);
+                    // 选择部门
+                    $(layero).find('.js-selectDept').on('click', function() {
+                        common.layUIDialog({
+                            title: '部门选择',
+                            type: 1,
+                            content: '<div id="dialogDept" class="ztree"></div>',
+                            area: ['300px', '500px'],
+                            success: function(layerEl) {
+                                common.initTree({
+                                    url: api.getDepartMent,
+                                    param: {},
+                                    treeId: 'dialogDept',
+                                    idKey: 'Id',
+                                    pIdKey: 'ParentId',
+                                    name: 'DepartmentName',
+                                    hasSearchClick: false,
+                                    expandFlag: true,
+                                    checkEnable: true,
+                                    dataFilter: function(data) {
+                                        return _.map(data, function(item, index) {
+                                            item.nocheck = !item.LastLeaf;
+                                            return item;
+                                        });
+                                    }
+                                });
+                            },
+                            btnAlign: 'r',
+                            btn: ['确 定', '关 闭'],
+                            yes: function(index) {
+                                var zTree = $.fn.zTree.getZTreeObj('dialogDept');
+                                var checks = zTree.getCheckedNodes(true);
+                                var len = checks.length;
+                                var deptNames = len > 0 ? _.map(checks, function(item) {
+                                    return item.DepartmentName;
+                                }) : '';
+                                var deptIds = len > 0 ? _.map(checks, function(item) {
+                                    return item.Id;
+                                }) : '';
+                                common.$(':text[name="DepartmentName"]', layero).val(deptNames.join());
+                                common.$(':hidden[name="DepartmentId"]', layero).val(deptIds.join());
+                                layer.close(index);
+                            },
+                            btn2: function(index) {
+                                layer.close(index)
+                            }
+                        });
+                    });
+                    common.renderForm(function(form) {
+                        form.on('submit(*)', function(data) {
+                            var submitData = data.field;
+                            var url = submitData.Id ? api.editUser : api.addUser;
+                            common.ajax(url, JSON.stringify(submitData), function(res) {
+                                if (res && res.success) {
+                                    layer.close(index);
+                                    me.table.reload('userTbList');
+                                }
+                            }, {
+                                type: 'POST',
+                                contentType: 'application/json;charset=utf-8'
+                            });
+                            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+                        });
+                    });
+                }
+            });
+        },
+        getUserByUserId: function(id) {
+            var me = this;
+            common.ajax(api.getUserByUserId, { id: id }, function(res) {
+                if (res && res.IsSuccess) {
+                    var data = res.Data;
+                    me.editDialog(data);
+                }
             });
         },
         event: function() {
+            var me = this;
             $('#content').off().on('click', '.js-add', function() {
-                var _html = template.compile(tpls.add)()
-                common.layUIDialog({
-                    title: '新增用户信息',
-                    type: 1,
-                    content: _html,
-                    area: ['450px', '450px'],
-                    success: function() {
-                        common.renderForm();
-                    },
-                    btnAlign: 'c',
-                    btn: ['立即提交', '重 置'],
-                    yes: function() {
-                        layui.use('form', function() {
-                            var form = layui.form;
-                            //form.on('submit('')')
+                me.editDialog();
+            }).on('click', '.js-edit', function() {
+                var rt = common.getSelectedRow(me.table, 'userTbList');
+                rt.success && me.editDialog(rt.data);
+            }).on('click', '.js-del', function() {
+                var rt = common.getSelectedRow(me.table, 'userTbList');
+                if (rt.success) {
+                    common.layConfirm('确定删除该该用户?', function() {
+                        common.ajax(api.deleteUser, {
+                            idList: rt.data.Id
+                        }, function(res) {
+                            if (res && res.success) {
+                                me.table.reload('userTbList');
+                            }
                         });
-                    },
-                    btn2: function() {
-                        alert('reset');
-                    }
-                })
+                    });
+                }
             });
         }
     });

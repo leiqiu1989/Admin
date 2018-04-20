@@ -13,16 +13,16 @@ define(function(require, exports, module) {
                                 var element = layui.element;
                                 element.render();
                             });
-                            me.selectMenu(href);
+                            me.selectMenu(href, mod);
                         });
                     }
                     return true;
                 }
             }).run();
         },
-        selectMenu: function(href) {
-            var currTarget = $('a[href="#' + href + '"');
-            if (currTarget.size() > 0) {
+        selectMenu: function(href, mod) {
+            var currTarget = $('a[href="#' + mod + '/index"');
+            if (currTarget.size() > 0 || href.indexOf(mod) > -1) {
                 $('ul[lay-filter="sidebar"] dd').removeClass('layui-this');
                 currTarget.parent().addClass('layui-this');
                 var li = $(currTarget).closest('li');

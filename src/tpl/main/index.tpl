@@ -42,6 +42,11 @@
                             </a>
                         </dd>
                         <dd>
+                            <a href="#department/index">
+                                <i class="fa fa-group"></i> 部门管理
+                            </a>
+                        </dd>
+                        <dd>
                             <a href="#menu/index">
                                 <i class="fa fa-navicon"></i> 菜单管理
                             </a>

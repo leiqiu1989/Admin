@@ -1,6 +1,6 @@
 <div class="layui-row">
     <div class="layui-col-md12">
-        <div class="layui-title">
+        <div class="layui-single-title">
             推发设置
         </div>
         <hr class="layui-bg-gray">

@@ -31,7 +31,7 @@ define(function(require, exports, module) {
                 var hash = getHash(),
                     arr = hash.split('/'),
                     len = arr.length,
-                    str = arr[arr.length - 1] || arr.splice(-1);
+                    str = arr.splice(-1);
 
                 if (hash.indexOf('=') == -1) {
                     return {};
