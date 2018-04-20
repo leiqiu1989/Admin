@@ -2,7 +2,7 @@ define(function(require, exports, module) {
     'use strict';
 
     // 测试服域名
-    var remoteUrl = '//localhost:18099';
+    var remoteUrl = '//192.168.0.200/88';
 
     /*接口API*/
     var api = {
