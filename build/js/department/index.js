@@ -14,7 +14,6 @@ define(function(require, exports, module) {
 
     $.extend(department.prototype, {
         init: function() {
-            var me = this;
             common.renderContent(tpls.index);
             this.initDeptTree();
             this.initTable();
@@ -89,7 +88,7 @@ define(function(require, exports, module) {
                 });
             });
         },
-        editDialog(data) {
+        editDialog: function(data) {
             var me = this;
             data = data || {};
             var isAdd = _.isEmpty(data) && me.parentId > 0;

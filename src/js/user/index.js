@@ -120,7 +120,7 @@ define(function(require, exports, module) {
                 me.table = table;
             });
         },
-        editDialog(data) {
+        editDialog: function(data) {
             var me = this;
             data = data || {};
             var isAdd = _.isEmpty(data);
