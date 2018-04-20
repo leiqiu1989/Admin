@@ -75,8 +75,20 @@ table {
     padding: 0 !important;
 }
 
+.no-border {
+    border: 0 !important;
+}
+
 .p20 {
     padding: 20px;
+}
+
+.p10 {
+    padding: 10px;
+}
+
+.m10 {
+    margin: 10px;
 }
 
 .mb10 {
@@ -91,9 +103,46 @@ table {
     width: 300px;
 }
 
+.full {
+    width: 100%;
+    height: 100%;
+}
+
 
 /*网站右侧内容区域*/
 
 #content {
     padding: 10px;
+}
+
+.anchorBL {
+    display: none;
+}
+
+.ztree-patch {
+    height: 77vh;
+    overflow: auto;
+}
+
+#departmentTree {
+    height: 82vh;
+    overflow: auto;
+}
+
+
+/*区域弹出框样式*/
+
+.dialog-area-form {
+    >.layui-form-item-search>input[name=treeText] {
+        width: 74%;
+    }
+    .ztree-container {
+        padding: 0 10px;
+        margin: 0;
+        >.ztree {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow: auto;
+        }
+    }
 }

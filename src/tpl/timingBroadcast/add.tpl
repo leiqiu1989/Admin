@@ -24,7 +24,7 @@
             <div class="layui-form-item">
                 <label class="layui-form-label">播发区域</label>
                 <div class="layui-input-block clearfix">
-                    <input type="text" class="layui-input layui-input-chose" placeholder="" />
+                    <input type="text" class="layui-input layui-input-dialog-chose" placeholder="" />
                     <button class="layui-btn">选 择</button>
                 </div>
             </div>
