@@ -15,7 +15,7 @@
 .layui-form-item-search {
     >input[type=text] {
         float: left;
-        width: auto;
+        width: calc(100% - 80px);
         margin: 10px 1px 0 10px;
     }
     >button {
@@ -30,6 +30,10 @@
 
 .layui-breadcrumb {
     visibility: visible;
+}
+
+.layui-form-select dl {
+    max-height: 200px;
 }
 
 
@@ -66,24 +70,13 @@
     border-left: 3px solid #21b4cb;
 }
 
-.layui-input-dialog-chose {
-    width: 82%;
-    float: left;
-    margin-right: 1px;
-}
-
-.layui-input-chose {
-    @extend .layui-input-dialog-chose;
-    width: 90%;
-}
-
 .layui-footer-btns {
     text-align: center;
     margin-left: 10px;
 }
 
 .layui-input-searchTree {
-    width: 83%;
+    width: calc(100% - 70px);
     float: left;
     margin-right: 1px;
 }

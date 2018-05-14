@@ -12,32 +12,47 @@ define(function(require, exports, module) {
     var addTerminal = function() {};
 
     $.extend(addTerminal.prototype, {
-        init: function(guid) {
+        init: function(id) {
             var me = this;
-            this.initTemplate(guid, function(data) {
+            this.initTemplate(id, function(data) {
                 common.renderContent(tpls.add, data);
-                if (data) {
-                    common.$(':text[name="lnglat"]').data('lnglat', { 'lng': data.Lng, 'lat': data.Lat });
-                    common.$(':radio[value="' + (data.Status ? 1 : 0) + '"]').attr('checked', true);
-                }
                 me.initControl(data);
-                common.areaMapDialog('#frmTerminalInfo', function(point) {
-                    common.$(':text[name="lnglat"]').data('lnglat', { 'lng': point.lng, 'lat': point.lat }).val(point.lng + ',' + point.lat);
-                }, function(areaCode, areaName) {
-                    if (areaCode && areaName) {
-                        common.$(':text[name="AreaName"]').val(areaName);
-                        common.$(':hidden[name="AreaCode"]').val(areaCode);
+                // 地图标点
+                common.mapDialog('#frmTerminalInfo', function(point) {
+                    common.$(':text[name="txtLngLat"]').val(point.lng + ',' + point.lat);
+                    common.$(':hidden[name="Lng"]').val(point.lng);
+                    common.$(':hidden[name="Lat"]').val(point.lat);
+                });
+                // 适配器选择
+                common.areaDialog('#frmTerminalInfo', function(treeNode) {
+                    if (!treeNode.IsDevice) {
+                        common.layAlert('只能选择适配器');
+                        return false;
                     }
+                    common.$(':text[name="ADNM"]').val(treeNode.FullAreaName || '');
+                    common.$(':hidden[name="ADCD"]').val(treeNode.ADCD || '');
+                    common.$(':hidden[name="ModemId"]').val(treeNode.InitCode || '');
+                }, {
+                    isDevice: true,
+                    dataFilter: function(data) {
+                        _.each(data, function(item) {
+                            if (item.IsDevice) {
+                                item.icon = '../img/device.png';
+                            }
+                        });
+                        return data;
+                    },
+                    title: '适配器选择'
                 });
                 me.event();
             });
         },
-        initTemplate: function(guid, callback) {
-            if (guid) {
-                common.ajax(api.detailModem, { guid: guid }, function(res) {
+        initTemplate: function(id, callback) {
+            if (id) {
+                common.ajax(api.getTerminalDetail, { id: id }, function(res) {
                     if (res && res.IsSuccess) {
-                        var data = res.Data;
-                        data.lnglat = data.Lng + ',' + data.Lat;
+                        var data = res.Data || {};
+                        data.InstallDate = new Date(data.InstallDate).format('yyyy-MM-dd');
                         callback && callback(data);
                     }
                 });
@@ -47,47 +62,40 @@ define(function(require, exports, module) {
         },
         initControl: function(data) {
             data = data || {};
-            common.getBundle(api.getPlaySource, api.getModemType).done(function(resPlaySource, resModemType) {
-                if (resPlaySource.IsSuccess && resModemType.IsSuccess) {
-                    common.initSelect({
-                        el: 'select[name="CommonSource"]',
-                        data: resPlaySource.Data,
-                        valueField: 'Id',
-                        textField: 'SourceName',
-                        selectValue: data.CommonSource || ''
+            common.initCode('select[name="LogicalAddress"]', data.LogicalAddress || '');
+            common.initSelect({
+                el: 'select[name="Status"]',
+                data: [{
+                    name: '正常',
+                    value: 0
+                }, {
+                    name: '作废',
+                    value: 1
+                }],
+                selectValue: data.selectValue || ''
+            });
+            common.initDateTime({
+                elem: 'input[name="InstallDate"]'
+            });
+            common.renderForm(function(form) {
+                form.on('submit(*)', function(data) {
+                    var submitData = data.field;
+                    if (submitData.ADCD.indexOf('-') != -1) {
+                        submitData.ADCD = submitData.ADCD.split('-')[0];
+                    }
+                    var url = submitData.Id ? api.editTerminal : api.addTerminal;
+                    common.ajax(url, JSON.stringify(submitData), function(res) {
+                        if (res && res.success) {
+                            var msg = submitData.Id ? '终端修改成功!' : '终端新增成功!';
+                            common.layMsg(msg);
+                            common.changeHash('#terminalManager/index');
+                        }
+                    }, {
+                        type: 'POST',
+                        contentType: 'application/json;charset=utf-8'
                     });
-                    common.initSelect({
-                        el: 'select[name="EmergencySource"]',
-                        data: resPlaySource.Data,
-                        valueField: 'Id',
-                        textField: 'SourceName',
-                        selectValue: data.EmergencySource || ''
-                    });
-                    common.initSelect({
-                        el: 'select[name="ModemTypeId"]',
-                        data: resModemType.Data,
-                        valueField: 'TypeId',
-                        textField: 'Description',
-                        selectValue: data.ModemTypeId || ''
-                    });
-                    common.renderForm(function(form) {
-                        form.on('submit(*)', function(data) {
-                            var submitData = $.extend(data.field, common.transLngLat(data.field.lnglat));
-                            var url = submitData.Guid ? api.updateModem : api.addModem;
-                            common.ajax(url, JSON.stringify(submitData), function(res) {
-                                if (res && res.success) {
-                                    var msg = submitData.Guid ? '设备修改成功!' : '设备新增成功!';
-                                    common.layMsg(msg);
-                                    common.changeHash('#terminalManager/index');
-                                }
-                            }, {
-                                type: 'POST',
-                                contentType: 'application/json;charset=utf-8'
-                            });
-                            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
-                        });
-                    });
-                }
+                    return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+                });
             });
         },
         event: function() {
@@ -101,6 +109,6 @@ define(function(require, exports, module) {
     var _addTerminal = new addTerminal();
 
     exports.init = function(param) {
-        _addTerminal.init(param.guid);
+        _addTerminal.init(param.id);
     };
 });

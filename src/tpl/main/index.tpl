@@ -1,25 +1,25 @@
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
-        <div class="layui-logo">村村响管理平台</div>
+        <a class="layui-logo" href="#main/index">村村响管理平台</a>
         <!-- 头部区域（可配合layui已有的水平导航） -->
-        <ul class="layui-nav layui-layout-left">
+        <!-- <ul class="layui-nav layui-layout-left">
             <li class="layui-nav-item"><a href="">设备状态</a></li>
             <li class="layui-nav-item"><a href="">播出状态</a></li>
             <li class="layui-nav-item"><a href="">快捷方式</a></li>
             <li class="layui-nav-item">
                 <a href="javascript:;">消息提醒<span class="layui-badge">99</span></a>
             </li>
-        </ul>
+        </ul> -->
         <ul class="layui-nav layui-layout-right">
             <li class="layui-nav-item">
                 <a href="javascript:;">
                     <img src="http://t.cn/RCzsdCq" class="layui-nav-img"> admin【都江堰市管理系统】
                 </a>
-                <dl class="layui-nav-child">
+                <!-- <dl class="layui-nav-child">
                     <dd><a href="">修改密码</a></dd>
-                </dl>
+                </dl> -->
             </li>
-            <li class="layui-nav-item"><a href="#login/index">退出系统</a></li>
+            <li class="layui-nav-item"><a href="javascript:" class="js-logout">退出系统</a></li>
         </ul>
     </div>
     <div class="layui-side layui-bg-black">
@@ -36,9 +36,14 @@
                                 <i class="fa fa-user"></i> 用户管理
                             </a>
                         </dd>
-                        <dd>
+                        <!-- <dd>
                             <a href="#role/index">
                                 <i class="fa fa-user-secret"></i> 角色管理
+                            </a>
+                        </dd> -->
+                        <dd>
+                            <a href="#areaManager/index">
+                                <i class="fa fa-map"></i> 区域管理
                             </a>
                         </dd>
                         <dd>
@@ -46,7 +51,7 @@
                                 <i class="fa fa-group"></i> 部门管理
                             </a>
                         </dd>
-                        <dd>
+                        <!-- <dd>
                             <a href="#menu/index">
                                 <i class="fa fa-navicon"></i> 菜单管理
                             </a>
@@ -55,9 +60,9 @@
                             <a href="#dataDictionary/index">
                                 <i class="fa fa-book"></i> 数据字典
                             </a>
-                        </dd>
+                        </dd> -->
                         <!-- <dd><a href="javascript:">系统主题</a></dd> -->
-                        <dd>
+                        <!-- <dd>
                             <a href="#shortCut/index">
                                 <i class="fa fa-chain-broken"></i> 快捷方式库管理
                             </a>
@@ -76,7 +81,7 @@
                             <a href="javascript:">
                                 <i class="fa fa-pencil"></i> 日志查询
                             </a>
-                        </dd>
+                        </dd> -->
                     </dl>
                 </li>
                 <li class="layui-nav-item">
@@ -84,7 +89,7 @@
                         <i class="fa fa-microchip"></i> 设备管理
                     </a>
                     <dl class="layui-nav-child">
-                        <dd>
+                        <!-- <dd>
                             <a href="#equipmentDetail/index">
                                 <i class="fa fa-newspaper-o"></i> 设备入库清单
                             </a>
@@ -103,7 +108,7 @@
                             <a href="#equipmentAudit/index">
                                 <i class="fa fa-check"></i> 设备审核
                             </a>
-                        </dd>
+                        </dd> -->
                         <dd>
                             <a href="#frontEndManager/index">
                                 <i class="fa fa-tag"></i> 前端管理
@@ -114,14 +119,14 @@
                                 <i class="fa fa-tags"></i> 终端管理
                             </a>
                         </dd>
-                        <dd>
+                        <!-- <dd>
                             <a href="#comprehensiveQuery/index">
                                 <i class="fa fa-list"></i> 综合查询
                             </a>
-                        </dd>
+                        </dd> -->
                     </dl>
                 </li>
-                <li class="layui-nav-item">
+                <!-- <li class="layui-nav-item">
                     <a href="javascript:;">
                         <i class="fa fa-wifi"></i> 云市场
                     </a>
@@ -142,12 +147,7 @@
                             </a>
                         </dd>
                     </dl>
-                </li>
-                <li class="layui-nav-item">
-                    <a href="#areaManager/index">
-                        <i class="fa fa-map"></i> 区域管理
-                    </a>
-                </li>
+                </li> -->
             </ul>
         </div>
     </div>

@@ -1,5 +1,8 @@
 define(function(require, exports, module) {
     var router = require('router');
+    var common = require('common');
+    var api = require('api');
+
     var app = {
         _init: function() {
             var me = this;
@@ -14,6 +17,7 @@ define(function(require, exports, module) {
                                 element.render();
                             });
                             me.selectMenu(href, mod);
+                            me.event();
                         });
                     }
                     return true;
@@ -32,6 +36,17 @@ define(function(require, exports, module) {
                 }
             }
         },
+        event: function() {
+            $('.js-logout').on('click', function() {
+                common.layConfirm('确认退出系统？', function() {
+                    common.ajax(api.logOut, {}, function(res) {
+                        if (res && res.success) {
+                            common.changeHash('#login/index');
+                        }
+                    });
+                });
+            });
+        }
     };
     module.exports = app;
 });

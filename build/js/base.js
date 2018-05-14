@@ -11,7 +11,8 @@ define("base", [], function() {
             app: 'app.js',
             router: 'common/router.js',
             common: 'common/common.js',
-            map: 'common/map.js'
+            map: 'common/map.js',
+            constVal: 'common/const.js'
         }
     });
 });

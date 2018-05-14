@@ -14,121 +14,113 @@ define(function(require, exports, module) {
 
     $.extend(frontEndManager.prototype, {
         init: function() {
+            var me = this;
             common.renderContent(tpls.index);
-            this.initTree();
+
+            common.initTree({
+                url: api.getAreaList,
+                param: {},
+                treeId: 'tree',
+                idKey: 'ADCD',
+                pIdKey: 'ParentCode',
+                name: 'ADNM',
+                hasSearchClick: true,
+                expandChildFlag: true,
+                callback: function(e, treeId, treeNode) {
+                    me.areaCode = treeNode.ADCD;
+                }
+            });
             this.initTable();
             this.event();
         },
-        initTree: function() {
-            var setting = {};
-            var zNodes = [{
-                    name: "父节点1 - 展开",
-                    open: true,
-                    children: [{
-                            name: "父节点11 - 折叠",
-                            children: [
-                                { name: "叶子节点111" },
-                                { name: "叶子节点112" },
-                                { name: "叶子节点113" },
-                                { name: "叶子节点114" }
-                            ]
-                        },
-                        {
-                            name: "父节点12 - 折叠",
-                            children: [
-                                { name: "叶子节点121" },
-                                { name: "叶子节点122" },
-                                { name: "叶子节点123" },
-                                { name: "叶子节点124" }
-                            ]
-                        },
-                        { name: "父节点13 - 没有子节点", isParent: true }
-                    ]
-                },
-                {
-                    name: "父节点2 - 折叠",
-                    children: [{
-                            name: "父节点21 - 展开",
-                            open: true,
-                            children: [
-                                { name: "叶子节点211" },
-                                { name: "叶子节点212" },
-                                { name: "叶子节点213" },
-                                { name: "叶子节点214" }
-                            ]
-                        },
-                        {
-                            name: "父节点22 - 折叠",
-                            children: [
-                                { name: "叶子节点221" },
-                                { name: "叶子节点222" },
-                                { name: "叶子节点223" },
-                                { name: "叶子节点224" }
-                            ]
-                        },
-                        {
-                            name: "父节点23 - 折叠",
-                            children: [
-                                { name: "叶子节点231" },
-                                { name: "叶子节点232" },
-                                { name: "叶子节点233" },
-                                { name: "叶子节点234" }
-                            ]
-                        }
-                    ]
-                },
-                { name: "父节点3 - 没有子节点", isParent: true }
-            ];
-
-            $.fn.zTree.init($("#tree"), setting, zNodes);
+        initProperty: function() {
+            this.areaCode = null;
         },
         initTable: function() {
+            var me = this;
             layui.use(['table'], function() {
                 var table = layui.table;
                 table.render({
-                    elem: '#userTbList',
-                    url: '/demo/table/user/',
-                    page: true,
+                    elem: '#modemTbList',
+                    url: api.getModemList,
+                    page: {
+                        limit: 20,
+                        layout: ['count', 'prev', 'page', 'next']
+                    },
+                    height: 'full-130',
                     cols: [
                         [ //表头
-                            { field: 'id', title: 'ID', width: 80, sort: true },
-                            { field: 'username', title: '用户名', width: 80 },
-                            { field: 'sex', title: '性别', width: 80, sort: true },
-                            { field: 'city', title: '城市', width: 80 },
-                            { field: 'sign', title: '签名', width: 170 },
-                            { field: 'experience', title: '积分', width: 80, sort: true },
-                            { field: 'score', title: '评分', width: 80, sort: true },
-                            { field: 'classify', title: '职业', width: 80 },
-                            { field: 'wealth', title: '财富', width: 135, sort: true }
-
+                            { title: '', field: 'Id', type: 'checkbox', fixed: 'left' },
+                            { title: '终端名称', field: 'ModemName', fixed: 'left', minWidth: 150 },
+                            { title: 'IP地址', field: 'ModemIp', fixed: 'left', minWidth: 150 },
+                            { title: 'IP端口', field: 'ModemPort', width: 80 },
+                            { title: '所属区域', field: 'ADNM', minWidth: 200 },
+                            { title: '设备类型', field: 'ModemTypeName', width: 100 },
+                            {
+                                title: '优先级',
+                                field: 'Priority',
+                                width: 100,
+                                templet: function(d) {
+                                    return d.Priority == 1 ? '上级优先' : (d.Priority == 2 ? '下级优先' : '');
+                                }
+                            },
+                            {
+                                title: '播出频率',
+                                field: 'PlayFrequency',
+                                width: 100,
+                                templet: function(d) {
+                                    return d.PlayFrequency.toFixed(2);
+                                }
+                            },
+                            { title: '播出衰减', field: 'PlayAttenuation', width: 90 },
+                            {
+                                title: '上级主频',
+                                field: 'MainFrequency',
+                                width: 100,
+                                templet: function(d) {
+                                    return d.MainFrequency.toFixed(2);
+                                }
+                            },
+                            {
+                                title: '上级副频',
+                                field: 'ViceFrequency',
+                                width: 100,
+                                templet: function(d) {
+                                    return d.ViceFrequency.toFixed(2);
+                                }
+                            },
+                            { title: '普通音源', field: 'CommonSourceName', width: 100 },
+                            { title: '应急音源', field: 'EmergencySourceName', width: 100 },
+                            { title: '安装地址', field: 'Adress', minWidth: 200 }
                         ]
                     ]
+                });
+                me.table = table;
+            });
+        },
+        deleteRow: function(guid) {
+            var me = this;
+            common.layConfirm('确定要删除该设备?', function() {
+                common.ajax(api.deleteModem, { guid: guid }, function(res) {
+                    if (res && res.success) {
+                        common.layMsg('设备删除成功!');
+                        me.table.reload('modemTbList');
+                        return false;
+                    }
                 });
             });
         },
         event: function() {
-            $('#content').off().on('click', '.js-add', function() {
-                var _html = template.compile(tpls.add)()
-                common.layUIDialog({
-                    title: '新增前端设备',
-                    type: 1,
-                    content: _html,
-                    area: ['800px', '560px'],
-                    success: function() {
-                        common.renderForm();
-                    },
-                    btnAlign: 'c',
-                    btn: ['保 存', '重 置'],
-                    yes: function() {
-                        alert('yes');
-                    },
-                    btn2: function() {
-                        alert('reset');
-                    }
+            var me = this;
+            $('#content').off()
+                .on('click', '.js-add', function() {
+                    common.changeHash('#frontEndManager/add');
                 })
-            });
+                .on('click', '.js-edit', function() {
+                    var rt = common.getSelectedRow(me.table, 'modemTbList');
+                    rt.success && common.changeHash('#frontEndManager/add/', { guid: rt.data.Guid });
+                });
         }
-
     });
 
     var _frontEndManager = new frontEndManager();

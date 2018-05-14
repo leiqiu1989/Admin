@@ -33,7 +33,7 @@ define(function(require, exports, module) {
                 pIdKey: 'ParentId',
                 name: 'DepartmentName',
                 hasSearchClick: true,
-                expandFlag: true,
+                expandAllFlag: true,
                 callback: function(e, treeId, treeNode) {
                     me.parentId = treeNode.Id;
                     me.parentName = treeNode.DepartmentName;
@@ -55,7 +55,11 @@ define(function(require, exports, module) {
                         pageName: 'pageIndex',
                         limitName: 'pageSize'
                     },
-                    page: true,
+                    page: {
+                        limit: 20,
+                        layout: ['count']
+                    },
+                    height: 'full-90',
                     cols: [
                         [ //表头                            
                             {
@@ -89,7 +93,7 @@ define(function(require, exports, module) {
                 });
             });
         },
-        editDialog(data) {
+        editDialog: function(data) {
             var me = this;
             data = data || {};
             var isAdd = _.isEmpty(data) && me.parentId > 0;

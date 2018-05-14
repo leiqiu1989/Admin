@@ -3,6 +3,7 @@ define(function(require, exports, module) {
 
     var api = require('api');
     var map = require('map');
+    var constVal = require('constVal');
     require('underscore');
 
     /*js对象扩展*/
@@ -37,29 +38,45 @@ define(function(require, exports, module) {
 
     /*公共js*/
     var common = {
-        // 弹出框
+        // dialog
         layUIDialog: function(opt) {
             layui.use('layer', function() {
                 var layer = layui.layer;
-                layer.open($.extend(opt, { offset: '60px' }));
+                layer.open($.extend(opt, { offset: opt.offset || '60px' }));
             });
         },
+        // loading
+        loading: function(callback) {
+            layer.load(0, {
+                shade: [0.2, '#333']
+            });
+        },
+        // close all
+        closeAllLayer: function(type) {
+            type = type || 'loading'
+            layer.closeAll(type); //关闭加载层
+        },
         // message
-        layMsg: function(content) {
+        layMsg: function(content, callback) {
             layui.use('layer', function() {
                 var layer = layui.layer;
                 layer.msg(content, {
-                    offset: 't'
+                    offset: 'auto',
+                    icon: 1,
+                    time: 2000
+                }, function() {
+                    callback && callback();
                 });
             });
         },
+        // alert
         layAlert: function(content, opt) {
             opt = opt || {};
             var options = $.extend({ icon: 2 }, opt);
             layer.alert(content, options);
             return false;
         },
-        // 确认框
+        // confirm
         layConfirm: function(content, callback) {
             layer.confirm(content, {
                 btn: ['确定', '取消'] //按钮
@@ -70,20 +87,146 @@ define(function(require, exports, module) {
                 layer.closeAll();
             });
         },
-        // 初始化form
+        // 数组删除插入
+        spliceArrayData: function(opt) {
+            opt = opt || {
+                sourceArray: [],
+                spliceArray: [],
+                filterField: ''
+            }
+            var soruce = _.map(opt.sourceArray, function(item) {
+                return item[opt.filterField];
+            });
+            _.each(opt.spliceArray, function(item) {
+                var index = _.indexOf(soruce, item[opt.filterField]);
+                opt.sourceArray.splice(index, 1, item);
+            });
+            return opt.sourceArray;
+        },
+        // 数组对象过滤指定字段
+        filterArray: function(sourceArray, fields) {　
+            sourceArray = sourceArray || [];
+            fields = fields || [];
+            var len = fields.length;
+            var array = [];
+            _.each(sourceArray, function(item) {
+                var result = [];
+                for (var i = 0; i < len; i++) {
+                    // number类型判断为true
+                    var value = item[fields[i]];
+                    if (_.isNumber(value)) {
+                        result.push(true);
+                    } else {
+                        result.push(!!value);
+                    }
+                }
+                var flag = _.every(result, _.identity)
+                flag && array.push(item);
+            });
+            return array;
+        },
+        // 验证频率
+        frequencyRangeValidate: function(value) {
+            if (!value || !(/^\d+(?:\.\d{1,2})?$/.test(value)) || value < constVal.minFrequency || value > constVal.maxFrequency) {
+                return false;
+            }
+            return true;
+        },
+        // 实时刷新modem数据
+        timingModemData: function(guid, callback) {
+            var me = this;
+            this.loading();
+            setTimeout(function() {
+                common.ajax(api.timingData, { guid: guid }, function(res) {
+                    if (res && res.IsSuccess) {
+                        var modem = res.Data;
+                        callback && callback(modem);
+                    }
+                    me.closeAllLayer();
+                });
+            }, 30000);
+        },
+        // 适配器下发命令（白名单，电台，定时广播）
+        instructIssue: function(param, oldData, callback) {
+            var url = api.instructIssue;
+            this.ajax(url, JSON.stringify(param), function(res) {
+                if (res && res.success) {
+                    var msg = res.msg;
+                    common.layMsg(msg);
+                    // 下发成功之后，删除IsDelete标识符
+                    var delIds = param.delIds;
+                    if (delIds) {
+                        var delArray = delIds.split('');
+                        _.each(delArray, function(id) {
+                            var rt = _.find(oldData, function(item) {
+                                return item.Id == parseInt(id);
+                            });
+                            if (rt && _.has(rt, 'IsDelete')) {
+                                delete rt['IsDelete']
+                            }
+                        });
+                    }
+                    common.timingModemData(param.guid, function(modem) {
+                        callback && callback(modem);
+                    });
+                }
+            }, {
+                type: 'POST',
+                contentType: 'application/json;charset=utf-8'
+            });
+        },
+        // 设备指令下发
+        deviceSendIssue: function(param, callback) {
+            var me = this;
+            var url = api.deviceSendIssue;
+            this.ajax(url, JSON.stringify(param), function(res) {
+                if (res && res.success) {
+                    var msg = res.msg;
+                    me.layMsg(msg);
+                    callback && callback();
+                }
+            }, {
+                type: 'POST',
+                contentType: 'application/json;charset=utf-8'
+            });
+        },
+        // init form
         renderForm: function(callback) {
+            var me = this;
             layui.use('form', function() {
                 var form = layui.form;
                 // 自定义验证
                 form.verify({
                     int: [
-                        /^\+?[1-9][0-9]*$/, '只能输入大于0的正整数'
-                    ]
+                        /^\+?[0-9][0-9]*$/, '只能输入大于等于0的正整数'
+                    ],
+                    double: [
+                        /^\d+(?:\.\d{1,2})?$/, '只能输入数字，保留2位小数'
+                    ],
+                    frequencyRange: function(value) {
+                        var rt = me.frequencyRangeValidate(value);
+                        if (!rt) {
+                            return '频率格式或者范围不正确，有效范围87.00-108.00'
+                        }
+                    }
                 });
                 form.render();
                 if (callback) {
                     callback(form);
                 }
+            });
+        },
+        // 渲染element组件
+        renderElement: function(opt) {
+            opt = opt || {
+                eventFilter: '',
+                callback: null
+            };
+            layui.use('element', function() {
+                var element = layui.element;
+                element.on(opt.eventFilter, function(data) {
+                    opt.callback && opt.callback(data);
+                });
             });
         },
         // 获取表格选择的行
@@ -102,13 +245,14 @@ define(function(require, exports, module) {
                 data: data
             };
         },
-        // 经纬度分割
-        transLngLat: function(lnglat) {
-            if (lnglat) {
-                var _lnglat = lnglat.split(',');
-                return { Lng: parseFloat(_lnglat[0]), Lat: parseFloat(_lnglat[1]) };
+        // 周期转换函数
+        transPeriod: function(period, index) {
+            if (period) {
+                var charArray = period.split('');
+                var rt = !!parseInt(charArray[index], 10);
+                return rt ? '<i class="fa fa-check green"></i>' : '';
             }
-            return {};
+            return '';
         },
         // 设置radio和checkbox选中
         setRadioCheckValue: function(container, filters) {
@@ -117,21 +261,66 @@ define(function(require, exports, module) {
                 $(container).find(filters[i]).attr('checked', true);
             });
         },
+        // 获取select文案
+        getSelectText: function(el, containerEl) {
+            return this.$(el, containerEl).children('option:selected').text();
+        },
+        // 赋值表单数据
+        setFormData: function(el, data) {
+            if (data && !$.isEmptyObject(data)) {
+                var inputs = $(el).find(':input');
+                var name = null;
+                $(inputs).each(function(index, input) {
+                    name = $(input).attr('name');
+                    if (name) {
+                        if ($(input)[0].tagName === 'SELECT') {
+                            $(input).val(data[name]);
+                        } else {
+                            $(input).val(data[name]);
+                        }
+                    }
+                });
+            }
+        },
+        // 初始化initCode
+        initCode: function(el, selVal) {
+            var opt = {
+                el: el,
+                textField: 'name',
+                valueField: 'value',
+                selectValue: selVal
+            };
+            var data = [{
+                name: '',
+                value: ''
+            }];
+            for (var i = 0; i < 100; i++) {
+                var val = i < 10 ? '0' + i : i + '';
+                data.push({
+                    name: val,
+                    value: val
+                });
+            }
+            opt.data = data;
+            this.initSelect(opt);
+        },
         // 初始化下拉框
         initSelect: function(opt) {
-            opt = opt || {
+            opt = $.extend({
                 el: '',
                 data: [],
                 textField: opt.textField || 'name',
                 valueField: opt.valueField || 'value',
-                selectValue: ''
-            };
-            var html = '';
+                selectValue: '',
+                addEmptyItem: false,
+                formatText: null
+            }, opt);
+            var html = opt.addEmptyItem ? '<option value="">请选择</option>' : '';
             $.each(opt.data, function(index, item) {
                 var _value = item[opt.valueField];
                 html += (opt.selectValue && opt.selectValue == _value) ?
-                    '<option value="' + item[opt.valueField] + '" selected>' + item[opt.textField] + '</option>' :
-                    '<option value="' + item[opt.valueField] + '">' + item[opt.textField] + '</option>'
+                    '<option value="' + item[opt.valueField] + '" selected>' + (opt.formatText ? opt.formatText(item) : item[opt.textField]) + '</option>' :
+                    '<option value="' + item[opt.valueField] + '">' + (opt.formatText ? opt.formatText(item) : item[opt.textField]) + '</option>'
             });
             $(opt.el).empty().html(html);
         },
@@ -186,7 +375,7 @@ define(function(require, exports, module) {
                 }
             }
         },
-        // 初始化区域
+        // 初始化树
         initTree: function(opt) {
             var me = this;
             opt = opt || {
@@ -198,9 +387,19 @@ define(function(require, exports, module) {
                 dataFilter: $.noop,
                 callback: $.noop,
                 hasSearchClick: false,
-                expandFlag: false,
-                checkEnable: false
+                expandAllFlag: false, //展开所有菜单
+                expandChildFlag: false, //展开子级菜单
+                checkEnable: false,
+                isDevice: false // 是否是适配器
             };
+            if (!opt.isDevice) {
+                opt.dataFilter = function(data) {
+                    data = _.filter(data, function(item) {
+                        return !item.IsDevice;
+                    });
+                    return data;
+                }
+            }
             var setting = {
                 view: {
                     selectedMulti: false
@@ -231,7 +430,13 @@ define(function(require, exports, module) {
                     }
                     $.fn.zTree.init($('#' + opt.treeId), setting, data);
                     var zTree = $.fn.zTree.getZTreeObj(opt.treeId);
-                    zTree.expandAll(opt.expandFlag);
+                    zTree.expandAll(opt.expandAllFlag);
+                    if (opt.expandChildFlag) {
+                        var nodes = zTree.getNodes();
+                        for (var i = 0; i < nodes.length; i++) { //设置节点展开
+                            zTree.expandNode(nodes[i], true, false, true);
+                        }
+                    }
                     if (opt.hasSearchClick) {
                         // 绑定事件
                         $('#btnSearchTree').on('click', function() {
@@ -242,186 +447,114 @@ define(function(require, exports, module) {
                 }
             });
         },
-        // 区域和地图弹出框选择
-        areaMapDialog: function(containerEl, mapCallBack, treeCallBack) {
+        // 递归查找区域全称
+        recursionNode: function(ztree, node, areaNameArray) {
+            var pNode = node.getParentNode();
+            if (pNode) {
+                areaNameArray.unshift(pNode.ADNM);
+                this.recursionNode(ztree, pNode, areaNameArray);
+            }
+            return areaNameArray.join('');
+        },
+        // 地图标点弹出框
+        mapDialog: function(containerEl, callBack) {
             var me = this;
-
-            $(containerEl).off()
-                // 选择区域
-                .on('click', '#choseArea', function() {
-                    var areaCode = null,
-                        areaName = null;
-                    var tpl = require('../../tpl/common/areaIndex');
-                    me.layUIDialog({
-                        title: '区域选择',
-                        type: 1,
-                        content: tpl,
-                        area: ['300px', '500px'],
-                        success: function(layerEl) {
-                            me.initTree({
-                                url: api.getAreaList,
-                                param: {},
-                                treeId: 'commonTree',
-                                idKey: 'ADCD',
-                                pIdKey: 'ParentCode',
-                                name: 'ADNM',
-                                hasSearchClick: true,
-                                callback: function(e, treeId, treeNode) {
-                                    areaCode = treeNode.ADCD;
-                                    areaName = treeNode.ADNM;
-                                }
-                            });
-                        },
-                        btnAlign: 'r',
-                        btn: ['确 定', '关 闭'],
-                        yes: function(index) {
-                            treeCallBack && treeCallBack(areaCode, areaName);
-                            layer.close(index)
-                        },
-                        btn2: function(index) {
-                            layer.close(index)
-                        }
-                    });
-                    return false;
-                })
-                // 选择地图
-                .on('click', '#choseLngLat', function() {
-                    var _point = null;
-                    var tempData = $(this).prev(':text[name="lnglat"]').data('lnglat')
-                    var lng = tempData ? tempData.lng : null;
-                    var lat = tempData ? tempData.lat : null;
-                    me.layUIDialog({
-                        title: '添加标注点',
-                        type: 1,
-                        content: '<div id="dialogMap" class="full"></div>',
-                        area: ['500px', '450px'],
-                        success: function() {
-                            map.init('dialogMap', null, function() {
-                                if (lng && lat) {
-                                    var point = new BMap.Point(lng, lat);
-                                    var marker = new BMap.Marker(point);
-                                    marker.enableDragging();
-                                    map.getMap().addOverlay(marker);
-                                    _point = point;
-                                    dragEvent(marker);
-                                }
-                            });
-                        },
-                        btnAlign: 'r',
-                        btn: ['添加标注点', '关 闭'],
-                        yes: function() {
-                            var _map = map.getMap();
-                            map.clearOverlays();
-                            var mkrTool = new BMapLib.MarkerTool(_map, { autoClose: true, followText: "添加标注点" });
-                            mkrTool.open();
-                            mkrTool.addEventListener("markend", function(e) {
-                                _point = e.marker.point;
-                                e.marker.enableDragging();
-                                dragEvent(e.marker);
-                                mkrTool.close();
-                            });
-                        },
-                        btn2: function(index) {
-                            if (_point) {
-                                mapCallBack && mapCallBack(_point);
+            $(containerEl).on('click', '#choseLngLat', function() {
+                var _point = null;
+                var lng = $(this).prevAll(':hidden[name="Lng"]').val();
+                var lat = $(this).prevAll(':hidden[name="Lat"]').val();
+                me.layUIDialog({
+                    title: '添加标注点',
+                    type: 1,
+                    content: '<div id="dialogMap" class="full"></div>',
+                    area: ['500px', '450px'],
+                    success: function() {
+                        map.init('dialogMap', null, function() {
+                            if (lng && lat) {
+                                var point = new BMap.Point(lng, lat);
+                                var marker = new BMap.Marker(point);
+                                marker.enableDragging();
+                                map.getMap().addOverlay(marker);
+                                _point = point;
+                                dragEvent(marker);
                             }
-                            layer.close(index)
-                        }
-                    });
-                    return false;
-
-                    function dragEvent(marker) {
-                        marker.addEventListener('dragend', function(e) {
-                            _point = e.point;
                         });
+                    },
+                    btnAlign: 'r',
+                    btn: ['添加标注点', '关 闭'],
+                    yes: function() {
+                        var _map = map.getMap();
+                        map.clearOverlays();
+                        var mkrTool = new BMapLib.MarkerTool(_map, { autoClose: true, followText: "添加标注点" });
+                        mkrTool.open();
+                        mkrTool.addEventListener("markend", function(e) {
+                            _point = e.marker.point;
+                            e.marker.enableDragging();
+                            dragEvent(e.marker);
+                            mkrTool.close();
+                        });
+                    },
+                    btn2: function(index) {
+                        if (_point) {
+                            callBack && callBack(_point);
+                        }
+                        layer.close(index)
                     }
                 });
-        },
-        // 自动转换为带时分秒的日期字符串
-        transferDateTime: function(time) {
-            var result = time;
-            if (_.isString(time)) {
-                var date = Date.parse(time);
-                if (!isNaN(date)) {
-                    result = new Date(date);
-                }
-            }
-            if (_.isNumber(time)) {
-                result = new Date(time);
-            }
-            if (_.isDate(result)) {
-                return result.format('yyyy-MM-dd hh:mm:ss');
-            }
-            return result;
-        },
-        // 检查日期（日期可为空，可不为空）
-        checkMayBeEmptyTime: function(startTime, endTime) {
-            if (!startTime && !endTime) {
-                return true;
-            } else if (!startTime || !endTime) {
-                this.toast('日期不能为空!');
                 return false;
-            } else {
-                var rtObj = this.equalsTime(startTime, endTime);
-                if (!rtObj.result) {
-                    this.toast('开始日期不能大于结束日期!');
+
+                function dragEvent(marker) {
+                    marker.addEventListener('dragend', function(e) {
+                        _point = e.point;
+                    });
                 }
-                return rtObj.result;
-            }
-        },
-        equalsTime: function(startTime, endTime) {
-            if (_.isString(startTime)) {
-                startTime = Date.parse(startTime.replace(/-/g, "/"));
-            } else {
-                startTime = Date.parse(startTime);
-            }
-            if (_.isString(endTime)) {
-                endTime = Date.parse(endTime.replace(/-/g, "/"));
-            } else {
-                endTime = Date.parse(endTime);
-            }
-            var millisecond = endTime - startTime;
-            return {
-                result: millisecond > 0,
-                diffTimes: millisecond
-            }
-        },
-        // 检查日期（日期为必填）
-        checkTime: function(dateTime, ct, interVals) {
-            if (!dateTime || !ct) {
-                common.toast('日期不能为空！');
-                return false;
-            }
-            var equalResult = this.equalsTime(ct, dateTime);
-            if (interVals) {
-                var times = interVals * 24 * 60 * 60 * 1000;
-                if (!equalResult.result || equalResult.diffTimes > times) {
-                    common.toast('时间周期必须小于或等于' + interVals + '天!');
-                    return false;
-                }
-            }
-            if (!equalResult.result) {
-                common.toast('结束日期必须大于或者开始日期!');
-                return false;
-            }
-            return true;
-        },
-        // 区间日期,intervals间隔的天数
-        initBetweenDateTime: function(startEl, endEl, interVals) {
-            var currentDate = new Date().format('yyyy/MM/dd H:m');
-            var opts = {
-                lang: 'ch',
-                timepicker: true,
-                format: 'Y/m/d H:i'
-            };
-            var startOpts = $.extend({}, opts, {
-                maxDate: currentDate
             });
-            var endOpts = $.extend({}, opts, {
-                maxDate: currentDate
+        },
+        // 区域弹出框
+        areaDialog: function(containerEl, callBack, opt) {
+            var me = this;
+            opt = opt || {};
+            $(containerEl).on('click', '#choseArea', function() {
+                var treeNodeData = null;
+                var tpl = require('../../tpl/common/areaIndex');
+                me.layUIDialog({
+                    title: opt.title || '区域选择',
+                    type: 1,
+                    content: tpl,
+                    area: ['300px', '500px'],
+                    success: function(layerEl) {
+                        me.initTree($.extend({
+                            url: api.getAreaList,
+                            param: {},
+                            treeId: 'commonTree',
+                            idKey: 'ADCD',
+                            pIdKey: 'ParentCode',
+                            name: 'ADNM',
+                            hasSearchClick: true,
+                            callback: function(e, treeId, treeNode) {
+                                treeNodeData = treeNode
+                            }
+                        }, opt));
+                    },
+                    btnAlign: 'r',
+                    btn: ['确 定', '关 闭'],
+                    yes: function(index) {
+                        var rt = true;
+                        if (callBack) {
+                            if (!treeNodeData) {
+                                me.layAlert('请选择一条数据进行操作');
+                                return false;
+                            }
+                            rt = callBack(treeNodeData);
+                        }
+                        (_.isUndefined(rt) || rt) && layer.close(index);
+                    },
+                    btn2: function(index) {
+                        layer.close(index)
+                    }
+                });
+                return false;
             });
-            $(startEl).datetimepicker(startOpts);
-            $(endEl).datetimepicker(endOpts);
         },
         // 序列化参数
         serialParam: function(data) {
@@ -437,24 +570,6 @@ define(function(require, exports, module) {
         changeHash: function(url, param) {
             var timeStamp = param ? '&' : '/';
             window.location.hash = url + this.serialParam(param) + timeStamp + 'time=' + (new Date()).valueOf();
-        },
-        // 清除sid
-        clearData: function() {
-            this.setCookie('abc-sid', null, -1);
-        },
-        // 遮罩层
-        loading: function(status, content) {
-            content = content || '加载中...';
-            status = status || 'show';
-            if ($('#glb_loading').size() < 1 && $('#glb_loading_msg').size() < 1) {
-                $('<div id="glb_loading"></div>').appendTo('body');
-                $('<div id="glb_loading_msg">' + content + '</div>').appendTo('body');
-            }
-            if (status === 'show') {
-                $('#glb_loading,#glb_loading_msg').show();
-            } else {
-                $('#glb_loading,#glb_loading_msg').hide();
-            }
         },
         // set cookie
         setCookie: function(name, value, expireDay) {
@@ -478,55 +593,6 @@ define(function(require, exports, module) {
         // remove locationStorage
         removeLocationStorage: function(key) {
             window.localStorage.removeItem(key);
-        },
-        getElValue: function(el, type) {
-            type = type || 'value';
-            if (type === 'value') {
-                return $.trim($(el).val());
-            } else {
-                return $.trim($(el).text());
-            }
-        },
-        setElValue: function(el, value) {
-            $(el).val(value);
-        },
-        // 获取表单提交数据
-        getFormData: function(el) {
-            var inputs = $(el).find(':input').not('[data-nosubmit="true"]');
-            var formData = {};
-            $(inputs).each(function(index, input) {
-                var name = null,
-                    value = null;
-                name = $(input).attr('name');
-                if (name) {
-                    if ($(input).is(':checkbox')) {
-                        var isChecked = $(input).is(':checked');
-                        value = isChecked ? $(input).data('chkvalue') : $(input).data('unchkvalue');
-                    } else if ($(input)[0].tagName === 'SELECT') {
-                        value = $(input).children('option:selected').val();
-                    } else {
-                        value = $(input).val();
-                    }
-                    formData[name] = value;
-                }
-            });
-            return formData;
-        },
-        setFormData: function(el, data) {
-            if (data && !$.isEmptyObject(data)) {
-                var inputs = $(el).find(':input');
-                var name = null;
-                $(inputs).each(function(index, input) {
-                    name = $(input).attr('name');
-                    if (name) {
-                        if ($(input)[0].tagName === 'SELECT') {
-                            $(input).val(data[name]);
-                        } else {
-                            $(input).val(data[name]);
-                        }
-                    }
-                });
-            }
         },
         getQueryString: function(name) {
             var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
@@ -560,20 +626,22 @@ define(function(require, exports, module) {
             var me = this;
             param = param || {};
             opt = opt || {};
-            this.loading();
             return $.ajax($.extend({
                     type: opt.type || 'GET',
                     url: url,
                     data: param,
                     dataType: 'json',
                     cache: false,
+                    xhrFields: {
+                        withCredentials: true
+                    },
                     success: function(res) {
                         // 代表未登陆
                         if (res && res.ErrorCode) {
                             var msg = res.Message || '系统错误,请联系管理员';
                             me.layAlert(msg, {
-                                yes: function(index) {
-                                    layer.close(index)
+                                yes: function() {
+                                    layer.closeAll();
                                     me.changeHash('#login/index');
                                 }
                             });
@@ -584,9 +652,7 @@ define(function(require, exports, module) {
                     },
                     error: function(a, b, c) {}
                 }, opt))
-                .always(function() {
-                    me.loading('hide');
-                });
+                .always(function() {});
         },
         $: function(el, container) {
             container = container || '#content'

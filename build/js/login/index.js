@@ -15,18 +15,23 @@ define(function(require, exports, module) {
             $('#app').empty().html(template.compile(tpls.index)());
             common.renderForm(function(form) {
                 form.on('submit(*)', function(data) {
+                    common.loading();
                     var submitData = data.field;
                     var url = api.login;
                     common.ajax(url, submitData, function(res) {
-                        if (res && res.Token) {
-                            common.changeHash('#user/index');
+                        common.closeAllLayer();
+                        if (res && res.success) {
+                            var token = res.Token;
+                            common.changeHash('#main/index');
+                        } else {
+                            common.layAlert('系统登陆失败');
+                            return false;
                         }
                     });
                     return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
                 });
             });
         }
-
     });
 
     var _login = new login();

@@ -6,134 +6,88 @@ define(function(require, exports, module) {
 
     // 模板
     var tpls = {
-        index: require('../../tpl/frontEndManager/index'),
-        add: require('../../tpl/frontEndManager/add')
+        index: require('../../tpl/areaManager/index')
     };
 
-    var frontEndManager = function() {};
+    var areaManager = function() {};
 
-    $.extend(frontEndManager.prototype, {
+    $.extend(areaManager.prototype, {
         init: function() {
+            var me = this;
             common.renderContent(tpls.index);
-            this.initTree();
-            this.initTable();
-            this.event();
-        },
-        initTree: function() {
-            var setting = {};
-            var zNodes = [{
-                    name: "父节点1 - 展开",
-                    open: true,
-                    children: [{
-                            name: "父节点11 - 折叠",
-                            children: [
-                                { name: "叶子节点111" },
-                                { name: "叶子节点112" },
-                                { name: "叶子节点113" },
-                                { name: "叶子节点114" }
-                            ]
-                        },
-                        {
-                            name: "父节点12 - 折叠",
-                            children: [
-                                { name: "叶子节点121" },
-                                { name: "叶子节点122" },
-                                { name: "叶子节点123" },
-                                { name: "叶子节点124" }
-                            ]
-                        },
-                        { name: "父节点13 - 没有子节点", isParent: true }
-                    ]
-                },
-                {
-                    name: "父节点2 - 折叠",
-                    children: [{
-                            name: "父节点21 - 展开",
-                            open: true,
-                            children: [
-                                { name: "叶子节点211" },
-                                { name: "叶子节点212" },
-                                { name: "叶子节点213" },
-                                { name: "叶子节点214" }
-                            ]
-                        },
-                        {
-                            name: "父节点22 - 折叠",
-                            children: [
-                                { name: "叶子节点221" },
-                                { name: "叶子节点222" },
-                                { name: "叶子节点223" },
-                                { name: "叶子节点224" }
-                            ]
-                        },
-                        {
-                            name: "父节点23 - 折叠",
-                            children: [
-                                { name: "叶子节点231" },
-                                { name: "叶子节点232" },
-                                { name: "叶子节点233" },
-                                { name: "叶子节点234" }
-                            ]
-                        }
-                    ]
-                },
-                { name: "父节点3 - 没有子节点", isParent: true }
-            ];
-
-            $.fn.zTree.init($("#tree"), setting, zNodes);
-        },
-        initTable: function() {
-            layui.use(['table'], function() {
-                var table = layui.table;
-                table.render({
-                    elem: '#userTbList',
-                    url: '/demo/table/user/',
-                    page: true,
-                    cols: [
-                        [ //表头
-                            { field: 'id', title: 'ID', width: 80, sort: true },
-                            { field: 'username', title: '用户名', width: 80 },
-                            { field: 'sex', title: '性别', width: 80, sort: true },
-                            { field: 'city', title: '城市', width: 80 },
-                            { field: 'sign', title: '签名', width: 170 },
-                            { field: 'experience', title: '积分', width: 80, sort: true },
-                            { field: 'score', title: '评分', width: 80, sort: true },
-                            { field: 'classify', title: '职业', width: 80 },
-                            { field: 'wealth', title: '财富', width: 135, sort: true }
-
-                        ]
-                    ]
+            common.initTree({
+                url: api.getAreaList,
+                param: {},
+                treeId: 'tree',
+                idKey: 'ADCD',
+                pIdKey: 'ParentCode',
+                name: 'ADNM',
+                expandChildFlag: true,
+                callback: function(e, treeId, treeNode) {
+                    me.treeNodeCallBack(treeNode);
+                }
+            });
+            common.initCode('select[name="InitCode"]');
+            common.renderForm(function(form) {
+                form.on('submit(save)', function(data) {
+                    var submitData = data.field;
+                    if (me.checkValidate(submitData.ADCD)) {
+                        me.submit(submitData);
+                    }
+                    return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+                });
+                form.on('submit(saveChild)', function(data) {
+                    var submitData = data.field;
+                    if (me.checkValidate(submitData.ADCD)) {
+                        me.submit(submitData);
+                    }
+                    return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
                 });
             });
         },
-        event: function() {
-            $('#content').off().on('click', '.js-add', function() {
-                var _html = template.compile(tpls.add)()
-                common.layUIDialog({
-                    title: '新增前端设备',
-                    type: 1,
-                    content: _html,
-                    area: ['800px', '560px'],
-                    success: function() {
-                        common.renderForm();
-                    },
-                    btnAlign: 'c',
-                    btn: ['保 存', '重 置'],
-                    yes: function() {
-                        alert('yes');
-                    },
-                    btn2: function() {
-                        alert('reset');
-                    }
-                })
+        checkValidate: function(adcd) {
+            if (!adcd) {
+                common.layAlert('请选择要操作的区域');
+                return false;
+            }
+            return true;
+        },
+        treeNodeCallBack: function(node) {
+            common.$(':text[name="ADNM"]').val(node.ADNM || '');
+            common.$(':hidden[name="ADCD"]').val(node.ADCD || '');
+            common.$('select[name="InitCode"]')
+                .val(node.InitCode)
+                .next('div.layui-form-select')
+                .find(':text')
+                .val(node.InitCode)
+                .end()
+                .find('dd[lay-value="' + node.InitCode + '"]')
+                .addClass('layui-this')
+                .siblings()
+                .removeClass('layui-this');
+        },
+        submit: function(data) {
+            var url = api.updateAreaInfo;
+            common.ajax(url, JSON.stringify(data), function(res) {
+                if (res && res.success) {
+                    common.layMsg('更新成功', function() {
+                        window.location.reload();
+                    });
+                } else {
+                    var msg = res.msg || '数据更新失败,请联系管理员';
+                    common.layAlert(msg);
+                    return false;
+                }
+            }, {
+                type: 'POST',
+                contentType: 'application/json;charset=utf-8'
             });
         }
-
     });
 
-    var _frontEndManager = new frontEndManager();
+    var _areaManager = new areaManager();
 
     exports.init = function() {
-        _frontEndManager.init();
+        _areaManager.init();
     };
 });

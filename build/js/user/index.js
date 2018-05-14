@@ -89,7 +89,11 @@ define(function(require, exports, module) {
                 table.render({
                     elem: '#userTbList',
                     url: api.getUserList,
-                    page: true,
+                    page: {
+                        limit: 20,
+                        layout: ['count']
+                    },
+                    height: 'full-130',
                     cols: [
                         [ //表头
                             { title: '', field: 'Id', type: 'checkbox' },
@@ -120,7 +124,7 @@ define(function(require, exports, module) {
                 me.table = table;
             });
         },
-        editDialog(data) {
+        editDialog: function(data) {
             var me = this;
             data = data || {};
             var isAdd = _.isEmpty(data);
@@ -150,7 +154,7 @@ define(function(require, exports, module) {
                                     pIdKey: 'ParentId',
                                     name: 'DepartmentName',
                                     hasSearchClick: false,
-                                    expandFlag: true,
+                                    expandAllFlag: true,
                                     checkEnable: true,
                                     dataFilter: function(data) {
                                         return _.map(data, function(item, index) {
