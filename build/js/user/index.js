@@ -161,6 +161,10 @@ define(function(require, exports, module) {
                                             item.nocheck = !item.LastLeaf;
                                             return item;
                                         });
+                                    },
+                                    callback: function(a, b, c) {
+                                        var zTree = $.fn.zTree.getZTreeObj('dialogDept');
+                                        zTree.checkNode(c, !c.checked, true);
                                     }
                                 });
                             },
@@ -170,12 +174,15 @@ define(function(require, exports, module) {
                                 var zTree = $.fn.zTree.getZTreeObj('dialogDept');
                                 var checks = zTree.getCheckedNodes(true);
                                 var len = checks.length;
+                                checks = _.filter(checks, function(item) {
+                                    return item.LastLeaf;
+                                });
                                 var deptNames = len > 0 ? _.map(checks, function(item) {
                                     return item.DepartmentName;
-                                }) : '';
+                                }) : [];
                                 var deptIds = len > 0 ? _.map(checks, function(item) {
                                     return item.Id;
-                                }) : '';
+                                }) : [];
                                 common.$(':text[name="DepartmentName"]', layero).val(deptNames.join());
                                 common.$(':hidden[name="DepartmentId"]', layero).val(deptIds.join());
                                 layer.close(index);
