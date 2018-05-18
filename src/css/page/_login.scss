@@ -3,6 +3,11 @@
     background: url(../img/bg.png) no-repeat center;
     background-size: cover;
     overflow: hidden;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     .login {
         margin: 120px auto 0 auto;
         min-height: 420px;
