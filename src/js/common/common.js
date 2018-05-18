@@ -144,7 +144,7 @@ define(function(require, exports, module) {
                     }
                     me.closeAllLayer();
                 });
-            }, 30000);
+            }, 20000);
         },
         // 适配器下发命令（白名单，电台，定时广播）
         instructIssue: function(param, oldData, callback) {

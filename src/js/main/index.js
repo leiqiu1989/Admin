@@ -82,7 +82,7 @@ define(function(require, exports, module) {
                             guid: item.Guid,
                             layerEl: layerEl
                         }
-                        $(layerEl).off().on('click', 'input[lay-filter="sysTime"]', function() {})
+                        $(layerEl).off()
                             // 正常广播
                             .on('click', 'input[lay-filter="commonRadio"]', function() {
                                 me.controlModem($.extend(opt, { switchModem: true, mode: 1 }));
@@ -98,9 +98,21 @@ define(function(require, exports, module) {
                             // 刷新
                             .on('click', 'button[lay-filter="refresh"]', function() {
                                 me.refreshData(opt);
+                            })
+                            // 校时
+                            .on('click', 'input[lay-filter="sysTime"]', function() {
+                                me.sysTimer(opt.guid);
                             });
                     }
                 });
+            });
+        },
+        sysTimer: function(guid) {
+            common.ajax(api.sysTimer, { guid: guid }, function(res) {
+                if (res && res.success) {
+                    var msg = res.msg;
+                    common.layMsg(msg);
+                }
             });
         },
         refreshData: function(opt) {

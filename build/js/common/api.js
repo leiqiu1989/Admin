@@ -75,7 +75,9 @@ define(function(require, exports, module) {
         // 根据适配器获取终端列表
         getTerminaInfoByModem: remoteUrl + '/api/Terminal/GetTerminaInfoByModem',
         // 设备指令下发
-        deviceSendIssue: remoteUrl + '/api/Modem/DeviceSendIssue'
+        deviceSendIssue: remoteUrl + '/api/Modem/DeviceSendIssue',
+        // 设备校时
+        sysTimer: remoteUrl + '/api/Modem/SystemTimer'
     };
     return api;
 });
